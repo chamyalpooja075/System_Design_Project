@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  name          String?
+  isAdmin       Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  projects      Project[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  diagrams    Diagram[]
+
+  @@map("projects")
+}
+
+model Diagram {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  version   Int      @default(1)
+  nodes     String   // Serialized React Flow nodes (JSON)
+  edges     String   // Serialized React Flow edges (JSON)
+  metrics   String?  // Serialized calculated graph metrics (JSON)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("diagrams")
+}
+
+model KnowledgeDoc {
+  id        String   @id @default(uuid())
+  docKey    String   @unique // e.g. "01-load-balancers"
+  title     String
+  topic     String
+  content   String
+  keywords  String   // Serialized JSON array of keywords
+  embedding String   // Serialized JSON float array for cosine similarity search
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("knowledge_docs")
+}
